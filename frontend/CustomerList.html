@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sortable, Paginated, and Searchable Customer Table</title>
+   
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+
+    <style>
+.modal-backdrop {
+    backdrop-filter: blur(5px);
+}
+
+    </style>
+</head>
+<body>
+
+    <div class="container mt-5">
+        <h2>Customer List</h2>
+
+        <div class="form-row mb-3">
+            <div class="col-md-2">
+                <button class="btn btn-primary" onclick="redirectToCreateCustomer()">Create Customer</button>
+
+            </div>
+            <div class="col-md-2">
+                <select class="form-control" id="searchColumn">
+                    <option value="firstName">First Name</option>
+                    <option value="lastName">Last Name</option>
+                    <option value="street">Street</option>
+                    <option value="address">Address</option>
+                    <option value="city">City</option>
+                    <option value="state">State</option>
+                    <option value="email">Email</option>
+                    <option value="phone">Phone</option>
+                </select>
+            
+            </div>
+            <div class="col-md-4">
+                <input type="text" class="form-control" id="searchTerm" placeholder="Search Term">
+            </div>
+            <div class="col-md-2">
+                <select class="form-control" id="sort">
+                    <option value="asc">asc</option>
+                    <option value="desc">desc</option>
+                </select>
+            
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-primary" onclick="searchData()">Search</button>
+            </div>
+        </div>
+
+        <table class="table table-bordered table-striped" id="customerTable">
+            <thead>
+                <tr>
+                    <th onclick="sortTable('first_name')">First Name <span id="arrowFirstName"></span></th>
+                    <th onclick="sortTable('last_name')">Last Name <span id="arrowLastName"></span></th>
+                    <th onclick="sortTable('street')">Street <span id="arrowStreet"></span></th>
+                    <th onclick="sortTable('address')">Address <span id="arrowAddress"></span></th>
+                    <th onclick="sortTable('city')">City <span id="arrowCity"></span></th>
+                    <th onclick="sortTable('state')">State <span id="arrowState"></span></th>
+                    <th onclick="sortTable('email')">Email <span id="arrowEmail"></span></th>
+                    <th onclick="sortTable('phone')">Phone <span id="arrowPhone"></span></th>
+                    <th>Action <span id=""></span></th>
+                </tr>
+            </thead>
+            <tbody id="customerTableBody">
+            </tbody>
+        </table>
+        <nav>
+            <ul class="pagination" id="pagination">
+            </ul>
+        </nav>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <script>
+        var currentPage = 0;
+
+        function redirectToCreateCustomer() {
+            window.location.href = 'CustomerDetails.html';
+        }
+
+        function sortTable(column) {
+            fetchData();
+        }
+
+        function searchData() {
+            var searchColumn = document.getElementById('searchColumn').value;
+            var searchTerm = document.getElementById('searchTerm').value;
+            var sortOrder = document.getElementById('sort').value;
+            var apiUrl = `http://localhost:8080/customer/searchCustomerbyproperty?searchBy=${searchColumn}&searchTerm=${searchTerm}&page=0&size=10&sortBy=lastName&sortOrder=${sortOrder}`;
+            
+            var jwtToken = localStorage.getItem('jwtToken');
+
+            fetch(apiUrl, {
+                headers: {
+                    'Authorization': `Bearer ${jwtToken}`
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    updateTable(data.data);
+                    updatePagination(data.data);
+                })
+                .catch(error => console.error('Error fetching data:', error));
+        }
+
+        function updateTable(data) {
+    var tableBody = document.getElementById('customerTableBody');
+    tableBody.innerHTML = "";
+
+    if (data != undefined && data.length > 0) {
+        data.forEach(customer => {
+            var row = document.createElement('tr');
+row.setAttribute('data-customer-id', customer.id);
+row.innerHTML = `
+    <td>${customer.first_name}</td>
+    <td>${customer.last_name}</td>
+    <td>${customer.street}</td>
+    <td>${customer.address}</td>
+    <td>${customer.city}</td>
+    <td>${customer.state}</td>
+    <td>${customer.email}</td>
+    <td>${customer.phone}</td>
+    <td>
+        <!-- Edit Icon -->
+        <a href="#" onclick="openEditModal(${customer.id})" data-toggle="modal" data-target="#editCustomerModal">
+            <i class="fas fa-pencil-alt"></i>
+        </a>
+        <!-- Delete Icon -->
+        <a href="#" onclick="deleteCustomer(${customer.id})">
+            <i class="fas fa-trash-alt"></i>
+        </a>
+    </td>
+`;
+
+tableBody.appendChild(row);
+        });
+    } else {
+        
+    }
+   }
+
+
+
+function openEditModal(customerId) {
+    
+        var selectedRow = document.querySelector(`tr[data-customer-id="${customerId}"]`);
+
+// Extract values from the selected row
+var selectedFirstName = selectedRow.cells[0].innerText; 
+var selectedLastName = selectedRow.cells[1].innerText;  
+var selectedStreet = selectedRow.cells[2].innerText; 
+var selectedAddress = selectedRow.cells[3].innerText;
+var selectedCity = selectedRow.cells[4].innerText;
+var selectedState = selectedRow.cells[5].innerText;
+var selectedEmail = selectedRow.cells[6].innerText; 
+var selectedPhone = selectedRow.cells[7].innerText;
+
+document.getElementById('editCustomerId').value = customerId;
+document.getElementById('editFirstName').value = selectedFirstName;
+document.getElementById('editLastName').value = selectedLastName;
+document.getElementById('editStreet').value = selectedStreet;
+document.getElementById('editAddress').value = selectedAddress;
+document.getElementById('editCity').value = selectedCity;
+document.getElementById('editState').value = selectedState;
+document.getElementById('editEmail').value = selectedEmail;
+document.getElementById('editPhone').value = selectedPhone;
+        // Trigger the modal display
+        $('#editCustomerModal').modal('show');
+    }
+
+function saveEditedCustomer() {
+    // Get the edited values from the modal
+    var editedCustomerId = document.getElementById('editCustomerId').value;
+    var editedFirstName = document.getElementById('editFirstName').value;
+    var editedLastName = document.getElementById('editLastName').value;
+    var editStreet = document.getElementById('editStreet').value;
+    var editAddress = document.getElementById('editAddress').value;
+    var editCity = document.getElementById('editCity').value;
+    var editState = document.getElementById('editState').value;
+    var editEmail = document.getElementById('editEmail').value;
+    var editPhone = document.getElementById('editPhone').value;
+    
+   var customerData = {
+                id:editedCustomerId,
+                first_name: editedFirstName,
+                last_name: editedLastName,
+                street: editStreet,
+                address: editAddress,
+                city: editCity,
+                state: editState,
+                email: editEmail,
+                phone: editPhone
+            };
+            var jwtToken = localStorage.getItem('jwtToken');
+            console.log("hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh")
+            fetch('http://localhost:8080/customer/updatecustomer', {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${jwtToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(customerData)
+            })
+            .then(response => {
+               if (response.ok) {
+                   
+                   window.location.href = 'customerlist.html';
+               } else {
+                   console.error('Error calling API:', response.statusText);
+               }
+            })
+            .then(data => {
+                console.log('API Response:', data);
+            })
+            .catch(error => console.error('Error calling API:', error));
+    
+    $('#editCustomerModal').modal('hide');
+}
+
+
+        function updatePagination(data) {
+            var pagination = document.getElementById('pagination');
+            pagination.innerHTML = "";
+
+            for (var i = 0; i < data.totalPages; i++) {
+                var li = document.createElement('li');
+                li.classList.add('page-item');
+                li.innerHTML = `<a class="page-link" href="#" onclick="changePage(${i})">${i + 1}</a>`;
+                if (i === currentPage) {
+                    li.classList.add('active');
+                }
+                pagination.appendChild(li);
+            }
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            fetchData();
+        }
+
+        
+        searchData();
+
+        function deleteCustomer(customerId) {
+   
+    var confirmDelete = confirm("Are you sure you want to delete this customer?");
+
+    
+    if (confirmDelete) {
+        var jwtToken = localStorage.getItem('jwtToken');
+
+            // Make API POST call
+            fetch('http://localhost:8080/customer/deletecustomerbyid/'+customerId, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${jwtToken}`,
+                    'Content-Type': 'application/json'
+                },
+              //  body: JSON.stringify(customerData)
+            })
+            .then(response => {
+               if (response.ok) {
+                   window.location.href = 'customerlist.html';
+               } else {
+                   // Handle other response statuses as needed
+                   console.error('Error calling API:', response.statusText);
+               }
+            })
+            .then(data => {
+                // Handle the response as needed
+                console.log('API Response:', data);
+            })
+            .catch(error => console.error('Error calling API:', error));
+    }
+    // If the user clicks "Cancel" in the confirmation dialog, do nothing
+}
+    </script>
+    
+<div class="modal fade" id="editCustomerModal" tabindex="-1" role="dialog" aria-labelledby="editCustomerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editCustomerModalLabel">Edit Customer</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="editCustomerForm">
+                    <input type="hidden" id="editCustomerId" name="editCustomerId" value="">
+                    <div class="form-group">
+                        <label for="editFirstName">First Name:</label>
+                        <input type="text" class="form-control" id="editFirstName" name="editFirstName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editLastName">Last Name:</label>
+                        <input type="text" class="form-control" id="editLastName" name="editLastName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editStreet">Street:</label>
+                        <input type="text" class="form-control" id="editStreet" name="editStreet" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editAddress">Address:</label>
+                        <input type="text" class="form-control" id="editAddress" name="editAddress" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editCity">City:</label>
+                        <input type="text" class="form-control" id="editCity" name="editCity" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editState">State:</label>
+                        <input type="text" class="form-control" id="editState" name="editState" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editEmail">Email:</label>
+                        <input type="text" class="form-control" id="editEmail" name="editEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editPhone">Phone:</label>
+                        <input type="text" class="form-control" id="editPhone" name="editPhone" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="saveEditedCustomer()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
