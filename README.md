@@ -7,7 +7,12 @@ in this all api required for this project
 jwt authentication has separate service in realtime project but in this project authentication part are evolve in same service
 
 frontend =for html css and javascript part
-
+------------------------------------------------------------------------------------------------------------
+need to install mysql database locally
+or
+ use amazon rds
+ and update all things regarding to d/b i.e. database name,url,username,pass
+-----------------------------------------------------------------------------------------------------------------------------
 this project need java 11
                   gradle 7.5.1
 use IDE intellij/eclipse to check code and run 
